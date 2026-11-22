@@ -1,9 +1,55 @@
-# MIT contracts
+<p align="center"><img src="docs/banner.png" alt="MIT contracts: read the code, then check it" width="100%"></p>
 
-The smart contracts MIT runs on Robinhood Chain (chain ID 4663), with their tests and everything needed to check that the code on-chain
-is the code you are reading.
+<h3 align="center">MIT contracts on Robinhood Chain</h3>
 
-[App](https://cryptoledgersociety.com/platform/) · [Docs](https://cryptoledgersociety.com/docs/) · [Contracts](docs/CONTRACTS.md) · [Security](.github/SECURITY.md)
+<p align="center"><i>The code that holds other people's tokens, its tests, and a way to check it against the chain yourself.</i></p>
+
+<p align="center">
+  <img alt="license: MIT" src="https://img.shields.io/badge/license-MIT-4c9a6a">
+  <img alt="chain: Robinhood Chain 4663" src="https://img.shields.io/badge/chain-Robinhood%20Chain%204663-d9c08a">
+  <img alt="solidity 0.8.26" src="https://img.shields.io/badge/solidity-0.8.26-3a6ea5">
+  <img alt="contracts: 2 live" src="https://img.shields.io/badge/contracts-2%20live-6f5fb5">
+  <img alt="tests: 42" src="https://img.shields.io/badge/tests-42-4c9a6a">
+  <img alt="audit: none yet" src="https://img.shields.io/badge/audit-none%20yet-c9783c">
+</p>
+
+<p align="center">
+  <a href="https://cryptoledgersociety.com/platform/">App</a> ·
+  <a href="https://cryptoledgersociety.com/docs/">Docs</a> ·
+  <a href="docs/CONTRACTS.md">Contracts</a> ·
+  <a href="#check-it-yourself">Check it yourself</a> ·
+  <a href=".github/SECURITY.md">Security</a>
+</p>
+
+---
+
+A lock page that says "locked" proves nothing. What proves it is the contract: who can take the tokens out, when, and whether anyone can
+change those rules later. This repository holds the two contracts MIT runs on Robinhood Chain (chain ID 4663), so you can read the rules
+and confirm that the code at the address is the code here.
+
+## How a lock lives
+
+```mermaid
+flowchart LR
+  A([Wallet]) -->|"lock()"| B[Locked<br/>until the date]
+  B -->|"extend() · increase()"| B
+  B -->|"makePermanent()"| P[Permanent<br/>never released]
+  B -->|date reached| C{Release}
+  C -->|all at once| D[Claimable]
+  C -->|evenly until the end date| D
+  D -->|"withdraw()<br/>owner of the lock only"| E([Wallet])
+```
+
+No arrow leads from **Locked** back to the wallet before the date, and no arrow belongs to MIT: the contract has no owner role.
+
+## How a KOL stake lives
+
+```mermaid
+flowchart LR
+  A([Wallet]) -->|"stake()<br/>exactly 10,000,000 $MIT"| B[Staked<br/>30 days]
+  B -->|30 days passed| C[Free to leave]
+  C -->|"unstake()<br/>the same tokens"| A
+```
 
 ## Contracts
 
@@ -89,14 +135,19 @@ cd locker && forge test --match-contract ForkTest --fork-url https://rpc.mainnet
 
 The MIT app, its server and its data are not open source. This repository holds only the contracts, because those are the parts that hold other people's tokens.
 
-## Layout
+## What is here
 
-```
-locker/      TokenLocker: source, tests, and the exact compiler input used to verify it
-kolstake/    KolStake: source, tests, and its compiler input
-scripts/     check_bytecode.py: compares the deployed code with a fresh build
-docs/        CONTRACTS.md: every function, event and rule
-```
+| Folder | What |
+|---|---|
+| [`locker/`](locker/) | `TokenLocker`: source, tests, and the exact compiler input used to verify it |
+| [`kolstake/`](kolstake/) | `KolStake`: source, tests, and its compiler input |
+| [`scripts/`](scripts/) | `check_bytecode.py`: compares the deployed code with a fresh build |
+| [`docs/`](docs/) | [`CONTRACTS.md`](docs/CONTRACTS.md): every function, event and rule |
+
+## Status
+
+Both contracts are live on Robinhood Chain mainnet and in use. Neither is audited. Neither can be changed: what you read here is what runs
+for as long as the chain does.
 
 ## Security
 
