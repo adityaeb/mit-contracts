@@ -27,6 +27,27 @@ A lock page that says "locked" proves nothing. What proves it is the contract: w
 change those rules later. This repository holds the two contracts MIT runs on Robinhood Chain (chain ID 4663), so you can read the rules
 and confirm that the code at the address is the code here.
 
+## What MIT is
+
+MIT is a set of trading tools on Robinhood Chain, opened by one token, $MIT. Most of it is software that runs on a server and never
+holds your tokens. Two parts do hold tokens, so those two are contracts, and they are the ones published here.
+
+| Tool | What it does | Holds your tokens? |
+|---|---|---|
+| **AI Super Agent** | Search any coin and get a read you can act on: Chart 3D with support and resistance, an entry, a target and a stop, projected candles, and the news behind the move | No. It only reads |
+| **MIT AutoTrade** | Runs a strategy on your own Bybit or Lighter account, inside the limits you set: which coins, how many positions, how much per trade. Your funds stay in your account, and the exchange key it uses can trade but cannot withdraw | No. Funds stay on your exchange account |
+| **Simulation** | Try a strategy on past data before you let it trade | No |
+| **Traders** | A public board of results, sorted by profit and loss | No |
+| **Track** | Check a token (trust score, tax, liquidity lock, the creator's past launches, look-alike tickers) or a wallet (profit and loss, where the money came from and went) | No. It only reads the chain |
+| **Lock** | Lock any token until a date, released at once or over time, with a public link for every lock | **Yes: `TokenLocker`, in this repository** |
+| **KOL stake** | Stake 10,000,000 $MIT for 30 days to get an affiliate code without asking anyone | **Yes: `KolStake`, in this repository** |
+| **$MIT** | Pays for access, and a wallet holding enough gets a free trial | The token is Pons launchpad code, not ours |
+
+Audit and Launch are planned and not open yet. Everything is in the [Launch App](https://cryptoledgersociety.com/platform/), and each
+tool is explained in the [Docs](https://cryptoledgersociety.com/docs/).
+
+MIT never asks for a private key or a seed phrase. Trading can lose money; none of these tools promises a result.
+
 ## How a lock lives
 
 ```mermaid
@@ -133,7 +154,7 @@ cd locker && forge test --match-contract ForkTest --fork-url https://rpc.mainnet
 
 ## What is not here
 
-The MIT app, its server and its data are not open source. This repository holds only the contracts, because those are the parts that hold other people's tokens.
+The code of the other tools (AI Super Agent, AutoTrade, Simulation, Track, the server and its data) is not open source. This repository holds only the contracts, because those are the parts that hold other people's tokens.
 
 ## What is here
 
