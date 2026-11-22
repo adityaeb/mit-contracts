@@ -1,0 +1,34 @@
+{
+ "language": "Solidity",
+ "sources": {
+  "src/KolStake.sol": {
+   "content": "// SPDX-License-Identifier: MIT\npragma solidity 0.8.26;\n\n/// @title KolStake \u2014 time-locked $MIT stake that qualifies a wallet for the CLS KOL (partner) program\n/// @notice A wallet stakes exactly `amount` tokens. The tokens stay in this contract for `lockSeconds`\n///         (the cooldown); after that the same wallet can take them back with `unstake()`.\n/// @dev    There is NO owner, NO admin, NO upgrade path and NO function that can move a staker's tokens to\n///         anyone but that staker. Deploy once; the rules can never change. The CLS backend only READS this\n///         contract (the Staked event and `stakes(wallet)`) to switch a KOL code on or off.\ninterface IERC20 {\n    function balanceOf(address account) external view returns (uint256);\n}\n\ncontract KolStake {\n    struct Stake {\n        uint128 amount;   // tokens held for this wallet (0 = no stake)\n        uint64 since;     // when it was staked\n        uint64 unlockAt;  // first moment unstake() works\n    }\n\n    address public immutable token;        // the ERC-20 being staked ($MIT)\n    uint256 public immutable amount;       // exact number of token units one stake needs\n    uint256 public immutable lockSeconds;  // cooldown before unstake() is allowed\n\n    mapping(address => Stake) public stakes;\n    uint256 public totalStaked;\n    uint256 public stakers;\n\n    uint256 private _entered = 1;\n\n    event Staked(address indexed staker, bytes32 indexed ref, uint256 amount, uint256 unlockAt);\n    event Unstaked(address indexed staker, uint256 amount);\n\n    error BadConfig();\n    error AlreadyStaked();\n    error NothingStaked();\n    error StillLocked(uint256 unlockAt);\n    error TransferFailed();\n    error WrongAmountReceived(uint256 received);\n    error Reentrancy();\n\n    modifier nonReentrant() {\n        if (_entered != 1) revert Reentrancy();\n        _entered = 2;\n        _;\n        _entered = 1;\n    }\n\n    constructor(address token_, uint256 amount_, uint256 lockSeconds_) {\n        if (token_.code.length == 0 || amount_ == 0 || amount_ > type(uint128).max || lockSeconds_ == 0 || lockSeconds_ > 365 days) {\n            revert BadConfig();\n        }\n        token = token_;\n        amount = amount_;\n        lockSeconds = lockSeconds_;\n    }\n\n    /// @notice Lock exactly `amount` tokens from the caller. Needs a prior `approve(this, amount)` on the token.\n    /// @param ref Free 32-byte reference chosen off-chain (the CLS join request id). Only emitted, never stored.\n    function stake(bytes32 ref) external nonReentrant {\n        if (stakes[msg.sender].amount != 0) revert AlreadyStaked();\n        uint256 before = IERC20(token).balanceOf(address(this));\n        _call(abi.encodeWithSelector(0x23b872dd, msg.sender, address(this), amount));   // transferFrom(address,address,uint256)\n        uint256 received = IERC20(token).balanceOf(address(this)) - before;\n        if (received != amount) revert WrongAmountReceived(received);                    // fee-on-transfer tokens are refused\n        uint64 unlockAt = uint64(block.timestamp + lockSeconds);\n        stakes[msg.sender] = Stake(uint128(amount), uint64(block.timestamp), unlockAt);\n        totalStaked += amount;\n        stakers += 1;\n        emit Staked(msg.sender, ref, amount, unlockAt);\n    }\n\n    /// @notice Take the caller's own stake back. Only works once the cooldown is over.\n    function unstake() external nonReentrant {\n        Stake memory s = stakes[msg.sender];\n        if (s.amount == 0) revert NothingStaked();\n        if (block.timestamp < s.unlockAt) revert StillLocked(s.unlockAt);\n        delete stakes[msg.sender];\n        totalStaked -= s.amount;\n        stakers -= 1;\n        _call(abi.encodeWithSelector(0xa9059cbb, msg.sender, uint256(s.amount)));         // transfer(address,uint256)\n        emit Unstaked(msg.sender, s.amount);\n    }\n\n    /// @notice Seconds left before `wallet` can unstake (0 = can unstake now, or has no stake).\n    function cooldownLeft(address wallet) external view returns (uint256) {\n        Stake memory s = stakes[wallet];\n        if (s.amount == 0 || block.timestamp >= s.unlockAt) return 0;\n        return s.unlockAt - block.timestamp;\n    }\n\n    /// @dev ERC-20 call that accepts tokens returning nothing (USDT style) and rejects ones returning false.\n    function _call(bytes memory data) private {\n        (bool ok, bytes memory ret) = token.call(data);\n        if (!ok || (ret.length != 0 && !abi.decode(ret, (bool)))) revert TransferFailed();\n    }\n}\n"
+  }
+ },
+ "settings": {
+  "optimizer": {
+   "enabled": true,
+   "runs": 200
+  },
+  "metadata": {
+   "useLiteralContent": false,
+   "bytecodeHash": "none",
+   "appendCBOR": false
+  },
+  "outputSelection": {
+   "*": {
+    "*": [
+     "abi",
+     "evm.bytecode.object",
+     "evm.deployedBytecode.object",
+     "evm.deployedBytecode.immutableReferences",
+     "evm.methodIdentifiers",
+     "metadata"
+    ]
+   }
+  },
+  "evmVersion": "shanghai",
+  "viaIR": false,
+  "libraries": {}
+ }
+}

@@ -1,0 +1,12 @@
+# build output and the test library (installed with the command in the README)
+out/
+cache/
+lib/
+broadcast/
+
+# never in this repository
+.env
+.env.*
+*.key
+*.pem
+.DS_Store
